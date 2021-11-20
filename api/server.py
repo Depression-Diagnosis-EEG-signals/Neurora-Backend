@@ -1,6 +1,9 @@
-from flask import Flask
+from flask import Flask, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+
+# from keras.models import load_model
+# model = load_model('model.h5')
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']= "sqlite:///neurora.db"
@@ -52,5 +55,28 @@ class PatientReport(db.model):
    Medication = db.Column(db.String(500))
    date_created = db.Column(db.DateTime, deafault=datetime.utcnow)
 
+@app.route('/predict', methods=['POST'])
+# def predict():
+#    features = [int(x) for x in request.form.values()]
+#    final_features = [np.aray(features)]
+#    prediction = model.predict(final_features)
+#    return render_template('index.html', prediction_text='')
+def predict():
+   imagefile = request.files['imagefile']
+   image_path = "./images/" + imagefile.filename
+   imagefile.save(image_path)
+
+   image = load_img(image_path, target_size=(224,224))
+   image = img_to_array(image)
+   image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
+   image = preprocess_input(image)
+   yhat = model.predict(image)
+   label = decode_predictions(yhat)
+   label = label[0][0]
+
+   classification = ''
+   return render_template('index.html', prediction = classification)
+
 if __name__ == '__main__':
    app.run(Debug = True)
+
