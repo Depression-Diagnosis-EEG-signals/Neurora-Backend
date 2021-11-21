@@ -43,7 +43,6 @@ class User(db.model):
    userPassword = db.Column(db.String(200))
    userGender = db.Column(db.String(10))
    
-
 class Admin(db.model):
    adminName = db.Column(db.String(200), nullable=False)
 
@@ -56,11 +55,6 @@ class PatientReport(db.model):
    date_created = db.Column(db.DateTime, deafault=datetime.utcnow)
 
 @app.route('/predict', methods=['POST'])
-# def predict():
-#    features = [int(x) for x in request.form.values()]
-#    final_features = [np.aray(features)]
-#    prediction = model.predict(final_features)
-#    return render_template('index.html', prediction_text='')
 def predict():
    imagefile = request.files['imagefile']
    image_path = "./images/" + imagefile.filename
@@ -77,6 +71,23 @@ def predict():
    classification = ''
    return render_template('index.html', prediction = classification)
 
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+   if request.method == 'GET':
+      render_template('signup.html')
+   if request.method == 'POST':
+      email = request.form.get('email')
+      Username = request.form.get('username')
+      password = request.form.get('password')
+      user = User.query.filter_by(email = email).first() 
+      # if email already in database
+      if user: 
+         return "User email already exists"
+      # if username already in database
+      user2 = User.query.filter_by(UserName = Username).first()
+      if user2:
+         return "Username already exists"
+
+
 if __name__ == '__main__':
    app.run(Debug = True)
-
