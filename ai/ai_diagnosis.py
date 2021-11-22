@@ -2,7 +2,6 @@ import json
 import pandas as pd
 import numpy as np
 import pickle
-import pywt
 from scipy import signal
 from scipy.fftpack import fft, ifft
 import statsmodels.api as sm
@@ -12,7 +11,7 @@ from scipy.stats import skew
 
 from keras.models import load_model
 
-model1 = load_model("Models/CNN_task.h5")
+model1 = load_model("./Models/CNN_task.h5")
 model2 = load_model("Models/CNN_EC.h5")
 model3 = load_model("Models/CNN_EO.h5")
 model4 = load_model("Models/CNN_LSTM_task.h5")
