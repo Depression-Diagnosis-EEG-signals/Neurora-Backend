@@ -11,6 +11,9 @@ import pandas as pd
 app = Flask(__name__)
 CORS(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///neurora.db"
+app.config[
+    "SQLALCHEMY_DATABASE_URI"
+] = "postgresql://postgres:rinaraniom@localhost:5432/"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
