@@ -121,6 +121,7 @@ def upload():
     data = request.form.to_dict()["data"]
     jsondata = json.loads(data)
     resp = ai_diagnosis(file, jsondata)
+    # resp = {'Model 1': 'Depression', 'Model 2': 'Depression', 'Model 3': 'Depression', 'Model 4': 'Depression', 'Model 5': 'Depression', 'Model 6': 'Depression', 'Model 7': 'Depression', 'Model 8': 'Depression', 'Model 9': 'Depression', 'Model 10': 'Depression', 'Model 11': 'Depression', 'Model 12': 'Depression'} 
     print(resp)
     response = {"message": "Successfully Uploaded"}
 
