@@ -1,11 +1,15 @@
 from flask import Flask, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from flask_cors import CORS, cross_origin
+import json
+import pandas as pd
 
 # from keras.models import load_model
 # model = load_model('model.h5')
 
 app = Flask(__name__)
+CORS(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///neurora.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
@@ -101,6 +105,26 @@ def signup():
         user2 = User.query.filter_by(UserName=Username).first()
         if user2:
             return "Username already exists"
+
+
+@app.route("/api", methods=["POST"])
+@cross_origin()
+def upload():
+    try:
+        file = request.files["file"]
+    except:
+        response = {"message": "Failed"}
+        return response, 400
+    data = request.form.to_dict()["data"]
+    jsondata = json.loads(data)
+    # print(jsondata)
+
+    df = pd.read_csv(file)
+    # print(df)
+
+    response = {"message": "Successfully Uploaded"}
+
+    return response, 200
 
 
 if __name__ == "__main__":
