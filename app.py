@@ -3,33 +3,33 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_cors import CORS, cross_origin
 import json
-from ai.ai_diagnosis import ai_diagnosis
 from flask_migrate import Migrate
-from sqlalchemy.dialects.postgresql import UUID
+# from sqlalchemy.dialects.postgresql import UUID
+
+# from ai.ai_diagnosis import ai_diagnosis
 
 # from keras.models import load_model
 # model = load_model('model.h5')
 
 app = Flask(__name__)
 CORS(app)
-app.config[ "SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:password@localhost:5432/test"
+app.config[ "SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:password@localhost:5432/testdb3"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
+db = SQLAlchemy(app) # not sure if app should be in parameter or not
 
 # database models
 
-
 class User(db.Model):
     __abstract__ = True
-    id = db.Column(UUID(as_uuid=True), db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     #  username = db.Column(db.String(200), nullable=False, primary_key=True)
     age = db.Column(db.Integer)
     email = db.Column(db.String(200))
     password = db.Column(db.String(200))
     gender = db.Column(db.String(10))
 
-
 class Patient(User):
+    __tablename__ = 'patient'
     # PatientId = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     address = db.Column(db.String(500))
@@ -41,6 +41,7 @@ class Patient(User):
 
 
 class Doctor(User):
+    __tablename__ = 'doctor'
     # DoctorId = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     specialisation = db.Column(db.String(200))
@@ -51,10 +52,12 @@ class Doctor(User):
 
 
 class Admin(User):
+    __tablename__ = 'admin'
     name = db.Column(db.String(200), nullable=False)
 
 
 class Hospital(db.Model):
+    __tablename__ = 'hospital'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     address = db.Column(db.String(500))
@@ -64,6 +67,7 @@ class Hospital(db.Model):
 
 
 class Report(db.Model):
+    __tablename__ = 'report'
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey("patient.id"), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey("doctor.id"), nullable=False)
@@ -72,23 +76,6 @@ class Report(db.Model):
     medication = db.Column(db.String(500))
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
-
-# @app.route("/predict", methods=["POST"])
-# def predict():
-#     imagefile = request.files["imagefile"]
-#     image_path = "./images/" + imagefile.filename
-#     imagefile.save(image_path)
-
-#     image = load_img(image_path, target_size=(224, 224))
-#     image = img_to_array(image)
-#     image = image.reshape((1, image.shape[0], image.shape[1], image.shape[2]))
-#     image = preprocess_input(image)
-#     yhat = model.predict(image)
-#     label = decode_predictions(yhat)
-#     label = label[0][0]
-
-#     classification = ""
-#     return render_template("index.html", prediction=classification)
 
 
 # @app.route("/signup", methods=["GET", "POST"])
@@ -119,25 +106,23 @@ def upload():
         return response, 400
     data = request.form.to_dict()["data"]
     jsondata = json.loads(data)
-    resp = ai_diagnosis(file, jsondata)
+    #resp = ai_diagnosis(file, jsondata)
     # resp = {'Model 1': 'Depression', 'Model 2': 'Depression', 'Model 3': 'Depression', 'Model 4': 'Depression', 'Model 5': 'Depression', 'Model 6': 'Depression', 'Model 7': 'Depression', 'Model 8': 'Depression', 'Model 9': 'Depression', 'Model 10': 'Depression', 'Model 11': 'Depression', 'Model 12': 'Depression'} 
-    print(resp)
+    #print(resp)
     response = {"message": "Successfully Uploaded"}
 
     return response, 200
 
-@app.route("/signup", methods=['GET', ['POST']])
+@app.route("/signup", methods=['POST'])
 @cross_origin()
 def signup():
-    try:
-        file = request.files["file"]
-    except:
-        response = {"message": "Failed"}
-        return response, 400
-    _role = request.form.to_dict()["role"]
-    _username = request.form.to_dict()["username"]
-    _email = request.form.to_dict()["email"]
-    _password = request.form.to_dict()["password"]
+    json_data = request.get_json()
+    _role = json_data["role"]
+    _username = json_data["username"]
+    _email = json_data["email"]
+    _password = json_data["password"]
+    _id = json_data["id"]
+    h_id = json_data["hid"]
     if _role and _email and _username and _password:
         # new_user = InfoModel(name=name, age=age)
         # db.session.add(new_user)
@@ -152,6 +137,8 @@ def signup():
 
         if _role == 'Doctor':
             new_doctor = Doctor()
+            new_doctor.id = _id
+            new_doctor.hospital_id = h_id
             new_doctor.name = _username
             new_doctor.email = _email
             new_doctor.password = _password
@@ -168,7 +155,10 @@ def signup():
         
         response = {"message": "Successfully Uploaded"}
         return response, 200
-
-
+    
+    else:
+        response = {"message": "Failed"}
+        return response, 400
+        
 if __name__ == "__main__":
     app.run(debug=True)
