@@ -4,7 +4,10 @@ from datetime import datetime
 from flask_cors import CORS, cross_origin
 import json
 from flask_migrate import Migrate
-# from sqlalchemy.dialects.postgresql import UUID
+from flask_login import login_required, current_user, login_user, logout_user
+import uuid
+
+from sqlalchemy.dialects.postgresql import UUID
 
 # from ai.ai_diagnosis import ai_diagnosis
 
@@ -21,12 +24,13 @@ db = SQLAlchemy(app) # not sure if app should be in parameter or not
 
 class User(db.Model):
     __abstract__ = True
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True)
     #  username = db.Column(db.String(200), nullable=False, primary_key=True)
     age = db.Column(db.Integer)
     email = db.Column(db.String(200))
     password = db.Column(db.String(200))
     gender = db.Column(db.String(10))
+
 
 class Patient(User):
     __tablename__ = 'patient'
@@ -58,7 +62,7 @@ class Admin(User):
 
 class Hospital(db.Model):
     __tablename__ = 'hospital'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     address = db.Column(db.String(500))
     noOfDoctors = db.Column(db.Integer)
@@ -68,7 +72,7 @@ class Hospital(db.Model):
 
 class Report(db.Model):
     __tablename__ = 'report'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey("patient.id"), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey("doctor.id"), nullable=False)
     ai_diagnosis = db.Column(db.String(500))
@@ -110,7 +114,6 @@ def upload():
     # resp = {'Model 1': 'Depression', 'Model 2': 'Depression', 'Model 3': 'Depression', 'Model 4': 'Depression', 'Model 5': 'Depression', 'Model 6': 'Depression', 'Model 7': 'Depression', 'Model 8': 'Depression', 'Model 9': 'Depression', 'Model 10': 'Depression', 'Model 11': 'Depression', 'Model 12': 'Depression'} 
     #print(resp)
     response = {"message": "Successfully Uploaded"}
-
     return response, 200
 
 @app.route("/signup", methods=['POST'])
@@ -121,8 +124,8 @@ def signup():
     _username = json_data["username"]
     _email = json_data["email"]
     _password = json_data["password"]
-    _id = json_data["id"]
-    h_id = json_data["hid"]
+    _id = uuid.uuid4()
+    h_id = uuid.uuid4()
     if _role and _email and _username and _password:
         # new_user = InfoModel(name=name, age=age)
         # db.session.add(new_user)
@@ -160,5 +163,32 @@ def signup():
         response = {"message": "Failed"}
         return response, 400
         
+@app.route('/login', methods = ['POST'])
+def login():
+    if current_user.is_authenticated:
+        response = {"message": "Currently Logged In"}
+        return response, 200
+     
+    if request.method == 'POST':
+        json_data = request.get_json()
+        _role = json_data["role"]
+        _username = json_data["username"]
+        _password = json_data["password"]
+        if _role == 'Doctor':
+            user = Doctor.query.filter_by(name = _username).first()
+        elif _role == 'Patient':
+            user = Patient.query.filter_by(name = _username).first()
+        elif _role == 'Admin':
+            user = Admin.query.filter_by(name = _username).first()
+            
+        if user is not None and user.password == _password: 
+            login_user(user)
+            response = {"message": "Successfully Logged In"}
+            return response, 200
+        else:
+            response = {"message": "Failed attempt, Try Again"}
+            return response, 400
+     
+
 if __name__ == "__main__":
     app.run(debug=True)
