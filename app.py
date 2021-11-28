@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_cors import CORS, cross_origin
@@ -16,6 +16,7 @@ CORS(app)
 app.config[ "SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:password@localhost:5432/testdb4"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+app.secret_key = "hello"
 
 # database models
 
@@ -124,7 +125,6 @@ def signup():
     _email = json_data["email"]
     _password = json_data["password"]
     _id = uuid.uuid4()
-    h_id = uuid.uuid4()
     if _role and _email and _username and _password:
         # new_user = InfoModel(name=name, age=age)
         # db.session.add(new_user)
@@ -163,9 +163,9 @@ def signup():
         
 @app.route('/login', methods = ['POST'])
 def login():
-    if current_user.is_authenticated:
-        response = {"message": "Currently Logged In"}
-        return response, 200
+    # if current_user.is_authenticated:
+    #     response = {"message": "Currently Logged In"}
+    #     return response, 200
      
     if request.method == 'POST':
         json_data = request.get_json()
@@ -179,16 +179,33 @@ def login():
         elif _role == 'Admin':
             user = Admin.query.filter_by(name = _username).first()
             
+        _id = user.id
         if user is not None and user.password == _password: 
-            login_user(user)
+            #login_user(user)
             response = {"message": "Successfully Logged In"}
-            response.set_cookie('UserId', user.id)
-            response.set_cookie('Type', _role)
+            session["role"] = _role
+            session["id"] = _id
             return response, 200
         else:
             response = {"message": "Failed attempt, Try Again"}
             return response, 400
      
+@app.route("/profile", methods=["GET"])
+def profile():
+    if "role" in session:
+        _role = session["role"]
+        _id = session["id"]
+        if _role == "Doctor":
+            response = {"Doctor id": _id}
+            return response, 200
+
+        if _role == "Patient":
+            response = {"Patient id": _id}
+            return response, 200
+
+        if _role == "Admin":
+            response = {"Admin id": _id}
+            return response, 200
 
 if __name__ == "__main__":
     app.run(debug=True)
