@@ -9,22 +9,20 @@ import uuid
 
 from sqlalchemy.dialects.postgresql import UUID
 
-# from ai.ai_diagnosis import ai_diagnosis
-
-# from keras.models import load_model
-# model = load_model('model.h5')
+#from ai.ai_diagnosis import ai_diagnosis
 
 app = Flask(__name__)
 CORS(app)
-app.config[ "SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:password@localhost:5432/testdb3"
+app.config[ "SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:password@localhost:5432/testdb4"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app) # not sure if app should be in parameter or not
+db = SQLAlchemy(app)
 
 # database models
 
 class User(db.Model):
     __abstract__ = True
     id = db.Column(UUID(as_uuid=True), primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
     #  username = db.Column(db.String(200), nullable=False, primary_key=True)
     age = db.Column(db.Integer)
     email = db.Column(db.String(200))
@@ -35,7 +33,7 @@ class User(db.Model):
 class Patient(User):
     __tablename__ = 'patient'
     # PatientId = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
+    #name = db.Column(db.String(200), nullable=False)
     address = db.Column(db.String(500))
     contact = db.Column(db.Integer)
     reports = db.relationship("Report", backref="patient", lazy=True)
@@ -47,34 +45,35 @@ class Patient(User):
 class Doctor(User):
     __tablename__ = 'doctor'
     # DoctorId = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
+    
     specialisation = db.Column(db.String(200))
     contact = db.Column(db.Integer)
     qualification = db.Column(db.String(200))
-    hospital_id = db.Column(db.Integer, db.ForeignKey("hospital.id"), nullable=False)
+    #hospital_id = db.Column(UUID(as_uuid=True), db.ForeignKey("hospital.id"), nullable=False)
+    hospital = db.Column(db.String(200))
     reports = db.relationship("Report", backref="doctor", lazy=True)
 
 
 class Admin(User):
     __tablename__ = 'admin'
-    name = db.Column(db.String(200), nullable=False)
+    #name = db.Column(db.String(200), nullable=False)
 
 
-class Hospital(db.Model):
-    __tablename__ = 'hospital'
-    id = db.Column(UUID(as_uuid=True), primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    address = db.Column(db.String(500))
-    noOfDoctors = db.Column(db.Integer)
-    contact = db.Column(db.Integer)
-    doctors = db.relationship("Doctor", backref="hospital", lazy=True)
+# class Hospital(db.Model):
+#     __tablename__ = 'hospital'
+#     id = db.Column(UUID(as_uuid=True), primary_key=True)
+#     name = db.Column(db.String(200), nullable=False)
+#     address = db.Column(db.String(500))
+#     noOfDoctors = db.Column(db.Integer)
+#     contact = db.Column(db.Integer)
+#     doctors = db.relationship("Doctor", backref="hospital", lazy=True)
 
 
 class Report(db.Model):
     __tablename__ = 'report'
     id = db.Column(UUID(as_uuid=True), primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey("patient.id"), nullable=False)
-    doctor_id = db.Column(db.Integer, db.ForeignKey("doctor.id"), nullable=False)
+    patient_id = db.Column(UUID(as_uuid=True), db.ForeignKey("patient.id"), nullable=False)
+    doctor_id = db.Column(UUID(as_uuid=True), db.ForeignKey("doctor.id"), nullable=False)
     ai_diagnosis = db.Column(db.String(500))
     doctor_comment = db.Column(db.String(500))
     medication = db.Column(db.String(500))
@@ -141,7 +140,6 @@ def signup():
         if _role == 'Doctor':
             new_doctor = Doctor()
             new_doctor.id = _id
-            new_doctor.hospital_id = h_id
             new_doctor.name = _username
             new_doctor.email = _email
             new_doctor.password = _password
@@ -184,6 +182,8 @@ def login():
         if user is not None and user.password == _password: 
             login_user(user)
             response = {"message": "Successfully Logged In"}
+            response.set_cookie('UserId', user.id)
+            response.set_cookie('Type', _role)
             return response, 200
         else:
             response = {"message": "Failed attempt, Try Again"}
